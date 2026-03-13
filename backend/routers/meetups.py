@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import models
 from database import get_db
@@ -16,6 +16,9 @@ class MeetupCreate(BaseModel):
     location: str
     circle_id: int
     creator_id: int
+    professional_type: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 @router.get("/")
 def get_all_meetups(db: Session = Depends(get_db)):
@@ -39,7 +42,10 @@ def create_meetup(meetup: MeetupCreate, db: Session = Depends(get_db)):
         activity_type=meetup.activity_type,
         location=meetup.location,
         circle_id=meetup.circle_id,
-        creator_id=meetup.creator_id
+        creator_id=meetup.creator_id,
+        professional_type=meetup.professional_type,
+        latitude=meetup.latitude,
+        longitude=meetup.longitude
     )
     db.add(new_meetup)
     db.commit()

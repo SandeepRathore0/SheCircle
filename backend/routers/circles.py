@@ -45,3 +45,29 @@ def join_circle(circle_id: int, user_id: int, db: Session = Depends(get_db)):
     db.add(member)
     db.commit()
     return {"message": "Joined successfully"}
+
+@router.get("/{circle_id}")
+def get_circle_detail(circle_id: int, db: Session = Depends(get_db)):
+    circle = db.query(models.Circle).filter_by(id=circle_id).first()
+    if not circle:
+        raise HTTPException(status_code=404, detail="Circle not found")
+    
+    # Get members with names
+    members = []
+    for m in circle.members:
+        if m.user:
+            members.append({
+                "id": m.user.id,
+                "name": m.user.name,
+                "joined_at": m.joined_at
+            })
+        
+    return {
+        "id": circle.id,
+        "name": circle.name,
+        "description": circle.description,
+        "location": circle.location,
+        "creator_id": circle.creator_id,
+        "created_at": circle.created_at,
+        "members": members
+    }

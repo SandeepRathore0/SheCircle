@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initMap" async defer></script>
     <!-- Main CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -25,7 +27,10 @@
             <a href="#" onclick="showPage('meetups-page')">Meetups</a>
             <a href="#" onclick="showPage('wall-page')">Anonymous Wall</a>
             <a href="#" onclick="showPage('chatbot-page')">Chatbot</a>
-            <a href="#" onclick="showPage('profile-page')">Profile</a>
+            <div id="auth-section" style="display: inline-block; margin-left: 20px;">
+                <!-- Will be populated by JS -->
+                <button class="btn-primary" onclick="openLoginModal()" style="padding: 5px 15px; font-size: 0.9em;">Login</button>
+            </div>
         </div>
     </nav>
 
@@ -60,53 +65,66 @@
         <section id="circles-page" class="page-section" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Community Support Circles</h2>
-                <button class="btn-primary"><i class="fa-solid fa-plus"></i> Create Circle</button>
+                <button class="btn-primary" onclick="openCreateCircleModal()"><i class="fa-solid fa-plus"></i> Create Circle</button>
             </div>
+            
+            <!-- Create Circle Modal -->
+            <div id="create-circle-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                <div class="card" style="width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Create a New Circle</h3>
+                        <button onclick="closeCreateCircleModal()" style="background: none; border: none; font-size: 1.5em; cursor: pointer; color: var(--text-grey);">&times;</button>
+                    </div>
+                    <form id="create-circle-form" onsubmit="createCircle(event)">
+                        <div style="margin-bottom: 15px;">
+                            <label for="circle-name" style="display: block; margin-bottom: 5px;">Name</label>
+                            <input type="text" id="circle-name" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label for="circle-description" style="display: block; margin-bottom: 5px;">Description</label>
+                            <textarea id="circle-description" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; min-height: 80px;"></textarea>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label for="circle-location" style="display: block; margin-bottom: 5px;">Location / Theme</label>
+                            <input type="text" id="circle-location" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;" placeholder="e.g., Central Park or Virtual">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">Create Circle</button>
+                    </form>
+                </div>
+            </div>
+
             <div class="cards-container" id="circles-container">
-                <!-- Mocked Circles -->
-                <div class="card">
-                    <h3>Mindful Mothers</h3>
-                    <p><i class="fa-solid fa-location-dot" style="color: var(--primary-rose)"></i> New York, NY (1.5 mi away)</p>
-                    <p style="font-size: 0.9em; margin-top: 10px;">A group for new mothers navigating the challenges of balancing work and home life.</p>
-                    <div style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="btn-primary" style="font-size: 0.9em; padding: 6px 12px;">Join</button>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3>Weekend Walkers</h3>
-                    <p><i class="fa-solid fa-location-dot" style="color: var(--primary-rose)"></i> Central Park</p>
-                    <p style="font-size: 0.9em; margin-top: 10px;">Casual strolls every Saturday morning to destress and chat.</p>
-                    <div style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button class="btn-primary" style="font-size: 0.9em; padding: 6px 12px;">Join</button>
-                    </div>
-                </div>
+                <!-- Circles will be dynamically injected here -->
+                <div style="text-align: center; width: 100%; color: var(--text-grey);">Loading circles...</div>
             </div>
         </section>
         
         <section id="meetups-page" class="page-section" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>Local Meetups</h2>
-                <button class="btn-primary"><i class="fa-solid fa-plus"></i> Organize</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <div>
+                    <h2>Local Meetups</h2>
+                    <p style="color: var(--text-grey); font-size: 0.85em; margin-top: 5px;">Showing meetups near <span id="current-location-text" style="color: var(--primary-rose); font-weight: 700;">your location</span></p>
+                </div>
+                <button class="btn-primary" onclick="openMeetupModal()"><i class="fa-solid fa-plus"></i> Organize</button>
             </div>
-            <div class="cards-container" id="meetups-container">
-                <div class="card">
-                    <h3>Coffee & Conversations</h3>
-                    <p><strong><i class="fa-regular fa-clock" style="color: var(--primary-rose)"></i> Tomorrow, 10:00 AM</strong></p>
-                    <p><i class="fa-solid fa-location-dot" style="color: var(--primary-rose)"></i> The Daily Grind Cafe</p>
-                    <p style="font-size: 0.9em; margin-top: 10px;">Open forum to discuss the unseen mental load over lattes.</p>
-                    <button class="btn-primary" style="margin-top: 15px; width: 100%; justify-content: center;">RSVP (3/8 spots)</button>
+
+            <!-- Real Map View -->
+            <div id="meetup-map" style="width: 100%; height: 400px; background: #f0f0f0; border-radius: 12px; margin-bottom: 30px; border: 1px solid #ddd; position: relative;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #aaa;">
+                    <i class="fa-solid fa-map-location-dot" style="font-size: 2.5em; margin-bottom: 10px;"></i>
+                    <p>Map initializing...</p>
                 </div>
             </div>
-            <!-- Mocked Map Container -->
-            <div class="map-container" style="margin-top: 2rem; width: 100%; height: 300px; background-color: #eee; border-radius: 14px; display: flex; justify-content: center; align-items: center; color: var(--text-grey);">
-                <p><i class="fa-solid fa-map-location-dot" style="font-size: 2em; margin-bottom: 10px; display: block; text-align: center;"></i> Map View Integration (Google Maps / Mapbox)</p>
+
+            <div class="cards-container" id="meetups-container">
+                <!-- Meetups will be loaded here -->
             </div>
         </section>
 
         <section id="wall-page" class="page-section" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Anonymous Sharing Wall</h2>
-                <button class="btn-primary"><i class="fa-solid fa-pen"></i> Share Thought</button>
+                <button class="btn-primary" onclick="openShareThoughtModal()"><i class="fa-solid fa-pen"></i> Share Thought</button>
             </div>
             <div class="cards-container" id="posts-container">
                 <div class="card">
@@ -134,6 +152,168 @@
         <section id="profile-page" class="page-section" style="display: none;">
             <h2>Your Profile</h2>
         </section>
+
+        <!-- Circle Detail Page -->
+        <section id="circle-detail-page" class="page-section" style="display: none;">
+            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 30px;">
+                <button onclick="showPage('circles-page')" style="background: none; border: 1px solid #ddd; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; color: var(--text-dark); display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h2 id="detail-circle-name" style="margin-bottom: 5px;">Circle Name</h2>
+                    <p id="detail-circle-location" style="color: var(--primary-rose); font-size: 0.9em;"><i class="fa-solid fa-location-dot"></i> Location</p>
+                </div>
+            </div>
+
+            <div class="circles-layout" style="display: grid; grid-template-columns: 1fr 300px; gap: 30px;">
+                <div class="left-col">
+                    <div class="card" style="margin-bottom: 30px;">
+                        <h3>About this Circle</h3>
+                        <p id="detail-circle-description" style="margin-top: 10px; line-height: 1.6;">Circle description goes here...</p>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>Circle Chat</h3>
+                            <span style="font-size: 0.8em; color: #4CAF50;"><i class="fa-solid fa-circle" style="font-size: 0.6em;"></i> Live</span>
+                        </div>
+                        <div id="circle-chat-history" style="height: 350px; overflow-y: auto; background: #f9f9f9; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Chat messages will appear here -->
+                            <p style="text-align: center; color: #aaa; margin-top: 150px;">Start a conversation...</p>
+                        </div>
+                        <form onsubmit="sendCircleMessage(event)" style="display: flex; gap: 10px;">
+                            <input type="text" id="circle-chat-input" placeholder="Type a message..." style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px;">
+                            <button type="submit" class="btn-primary" style="width: 50px; height: 50px; border-radius: 50%; padding: 0; justify-content: center;">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <div class="card" style="margin-bottom: 30px;">
+                        <h3>Members</h3>
+                        <div id="detail-circle-members" style="margin-top: 15px; display: flex; flex-direction: column; gap: 12px;">
+                            <!-- Members will appear here -->
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3>Meetups</h3>
+                            <button class="btn-primary" style="padding: 4px 8px; font-size: 0.75em;"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="detail-circle-meetups" style="display: flex; flex-direction: column; gap: 15px;">
+                            <!-- Meetups will appear here -->
+                            <p style="color: #aaa; font-size: 0.9em; text-align: center;">No meetups scheduled.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Share Thought Modal -->
+        <div id="share-thought-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeShareThoughtModal()">&times;</span>
+                <h3>Share Your Thought</h3>
+                <p style="font-size: 0.9em; margin-bottom: 10px; color: var(--text-grey);">This will be posted anonymously. No one will know it's you.</p>
+                <textarea id="thought-input" placeholder="What's on your mind?"></textarea>
+                <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="submitThought()">Post Anonymously</button>
+            </div>
+        </div>
+
+        <!-- Create Meetup Modal -->
+        <div id="meetup-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1001; justify-content: center; align-items: center;">
+            <div class="card" style="width: 90%; max-width: 500px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>Organize a Meetup</h3>
+                    <i class="fa-solid fa-xmark" style="cursor: pointer; color: #888;" onclick="closeMeetupModal()"></i>
+                </div>
+                <form onsubmit="submitMeetup(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                    <input type="text" id="meetup-title" placeholder="Meetup Title" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                    <textarea id="meetup-desc" placeholder="What will happen?" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; height: 80px;"></textarea>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="datetime-local" id="meetup-time" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                        <input type="text" id="meetup-location-input" placeholder="Location Name" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                    </div>
+
+                    <div style="background: #fff5f7; padding: 15px; border-radius: 8px; border: 1px dashed var(--primary-rose);">
+                        <p style="font-size: 0.85em; font-weight: 700; margin-bottom: 10px; color: var(--text-dark);">
+                            <i class="fa-solid fa-user-doctor"></i> Invite a Professional Specialist
+                        </p>
+                        <select id="meetup-pro" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                            <option value="">None (Community Led)</option>
+                            <option value="Therapist">Professional Therapist (Mental Health)</option>
+                            <option value="Business Analyst">Business Analyst (Career/Finance)</option>
+                            <option value="Sexual Health Activist">Sexual Health Activist (Awareness)</option>
+                        </select>
+                        <p style="font-size: 0.75em; color: var(--text-grey); margin-top: 5px;">Inviting a specialist helps spread expert awareness on the topic.</p>
+                    </div>
+
+                    <div id="meetup-circle-select-container">
+                        <label style="font-size: 0.8em; color: var(--text-grey);">Member of Circle:</label>
+                        <select id="meetup-circle-id" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-top: 5px;">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="margin-top: 10px;">Launch Meetup</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Auth Modal -->
+        <div id="login-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+            <div class="card" style="width: 90%; max-width: 400px; text-align: center;">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                    <button onclick="closeLoginModal()" style="background: none; border: none; font-size: 1.5em; cursor: pointer; color: var(--text-grey);">&times;</button>
+                </div>
+                
+                <div id="auth-signin-view">
+                    <h3 style="margin-bottom: 20px;">Welcome Back</h3>
+                    <p style="color: var(--text-grey); margin-bottom: 20px;">Sign in to connect with your circles.</p>
+                    
+                    <form onsubmit="loginCustomUser(event)" style="text-align: left; margin-bottom: 20px;">
+                        <input type="email" id="login-email" required placeholder="Email Address" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px;">
+                        <input type="password" id="login-password" required placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">Log In</button>
+                    </form>
+
+                    <div style="margin: 20px 0; color: var(--text-grey); font-size: 0.9em;">OR</div>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <button type="button" onclick="loginWithGoogle('alice@example.com')" class="btn-primary" style="background-color: white; color: #444; border: 1px solid #ddd; justify-content: center;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 20px; height: 20px; object-fit: contain;">
+                            Test as Alice
+                        </button>
+                        <button type="button" onclick="loginWithGoogle('bob@example.com')" class="btn-primary" style="background-color: white; color: #444; border: 1px solid #ddd; justify-content: center;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 20px; height: 20px; object-fit: contain;">
+                            Test as Bob
+                        </button>
+                        <button type="button" onclick="loginWithGoogle('charlie@example.com')" class="btn-primary" style="background-color: white; color: #444; border: 1px solid #ddd; justify-content: center;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 20px; height: 20px; object-fit: contain;">
+                            Test as Charlie
+                        </button>
+                    </div>
+                    <p style="margin-top: 25px; font-size: 0.9em;">Don't have an account? <a href="#" onclick="toggleAuthMode('signup')" style="color: var(--primary-rose);">Sign up</a></p>
+                </div>
+
+                <div id="auth-signup-view" style="display: none;">
+                    <h3 style="margin-bottom: 20px;">Join SheCircle</h3>
+                    <p style="color: var(--text-grey); margin-bottom: 20px;">Create an account to join the community.</p>
+                    
+                    <form onsubmit="registerCustomUser(event)" style="text-align: left; margin-bottom: 20px;">
+                        <input type="text" id="register-name" required placeholder="Full Name" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px;">
+                        <input type="email" id="register-email" required placeholder="Email Address" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px;">
+                        <input type="password" id="register-password" required placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">Create Account</button>
+                    </form>
+                    <p style="margin-top: 25px; font-size: 0.9em;">Already have an account? <a href="#" onclick="toggleAuthMode('signin')" style="color: var(--primary-rose);">Log in</a></p>
+                </div>
+            </div>
+        </div>
 
     </main>
 

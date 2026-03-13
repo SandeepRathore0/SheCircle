@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, Float
 from sqlalchemy.orm import relationship
 import datetime
 from database import Base
@@ -9,7 +9,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
+    hashed_password = Column(String, nullable=True) # Nullable for OAuth users
+    google_id = Column(String, unique=True, index=True, nullable=True)
     age_group = Column(String)
     location = Column(String)
     interests = Column(String) # Comma-separated or JSON string
@@ -17,6 +18,8 @@ class User(Base):
     emotional_preferences = Column(String)
     is_verified = Column(Boolean, default=False)
     profile_picture = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
 
     circles = relationship("CircleMember", back_populates="user")
     posts = relationship("Post", back_populates="author")
@@ -57,6 +60,9 @@ class Meetup(Base):
     date_time = Column(DateTime)
     activity_type = Column(String)
     location = Column(String)
+    professional_type = Column(String, nullable=True) # therapist, analyst, activist
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     creator_id = Column(Integer, ForeignKey("users.id"))
 
     circle = relationship("Circle", back_populates="meetups")
